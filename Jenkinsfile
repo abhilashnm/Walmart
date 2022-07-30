@@ -32,32 +32,34 @@ sh "scp -o  StrictHostKeyChecking=no target/maven-web-application.war ec2-user@3
 */
 
 }
-catch(e){    
-currentBuild.result = "FAILURE"
-throw e    
-} 
-finallay{
-slacknotifications(currentBuild.result)
-}    
+catch (e) {
+    // If there was an exception thrown, the build failed
+    currentBuild.result = "FAILED"
+    throw e
+  } finally {
+    // Success or failure, always send notifications
+    sendNotifications(currentBuild.result)
+  }  
     
 }// node closing
 
 
-def notifyBuild(String buildStatus = 'STARTED') {
+def sendNotifications(String buildStatus = 'STARTED') {
+  
   // build status of null means successful
-  buildStatus =  buildStatus ?: 'SUCCESSFUL'
-
-  // Default values
+    buildStatus =  buildStatus ?: 'SUCCESS'
+   // Default values
   def colorName = 'RED'
   def colorCode = '#FF0000'
   def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
-  def summary = "${subject} (${env.BUILD_URL})"
+  def summary = "${subject} \n Job Name: '${env.JOB_NAME} \n Build Number: [${currentBuild.displayName}]' \n Build URL: (${env.BUILD_URL}) \n }"
+  
 
   // Override default values based on build status
   if (buildStatus == 'STARTED') {
     color = 'YELLOW'
     colorCode = '#FFFF00'
-  } else if (buildStatus == 'SUCCESSFUL') {
+  } else if (buildStatus == 'SUCCESS') {
     color = 'GREEN'
     colorCode = '#00FF00'
   } else {
@@ -68,4 +70,6 @@ def notifyBuild(String buildStatus = 'STARTED') {
   // Send notifications
   slackSend (color: colorCode, message: summary)
 }
+
+
 
